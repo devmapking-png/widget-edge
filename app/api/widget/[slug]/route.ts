@@ -1,11 +1,13 @@
 // app/api/widget/[slug]/route.ts
-export const runtime = 'edge'; // run globally at the edge
+import { NextRequest } from 'next/server';
+
+export const runtime = 'edge';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 export async function GET(
-  _req: Request,
+  _req: NextRequest,
   { params }: { params: { slug: string } }
 ) {
   const url = new URL(`${SUPABASE_URL}/rest/v1/widgets`);
@@ -15,7 +17,7 @@ export async function GET(
 
   const r = await fetch(url.toString(), {
     headers: { apikey: SUPABASE_ANON_KEY, accept: 'application/json' },
-    cache: 'no-store'
+    cache: 'no-store',
   });
 
   if (!r.ok) {
@@ -30,7 +32,7 @@ export async function GET(
   return new Response(JSON.stringify(rows[0]), {
     headers: {
       'content-type': 'application/json',
-      'cache-control': 'public, max-age=15, s-maxage=300, stale-while-revalidate=600'
-    }
+      'cache-control': 'public, max-age=15, s-maxage=300, stale-while-revalidate=600',
+    },
   });
 }

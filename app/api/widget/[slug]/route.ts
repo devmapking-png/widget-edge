@@ -1,5 +1,4 @@
-// app/api/widget/[slug]/route.ts
-import { NextRequest } from 'next/server';
+import type { NextRequest } from 'next/server';
 
 export const runtime = 'edge';
 
@@ -8,10 +7,12 @@ const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { slug: string } }
+  context: { params: Promise<{ slug: string }> } // 👈 Next 16: params is a Promise
 ) {
+  const { slug } = await context.params;        // 👈 await it
+
   const url = new URL(`${SUPABASE_URL}/rest/v1/widgets`);
-  url.searchParams.set('slug', `eq.${params.slug}`);
+  url.searchParams.set('slug', `eq.${slug}`);
   url.searchParams.set('published', 'eq.true');
   url.searchParams.set('select', 'type,config,version,updated_at');
 

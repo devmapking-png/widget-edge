@@ -17,8 +17,13 @@ function render(root, type, cfg){
   root.appendChild(btn);
 }
 async function mount(s){
+  // inside loader.v1.js, in the mount() function
+const srcUrl = s.getAttribute('src');
+const selfOrigin = srcUrl ? new URL(srcUrl, document.baseURI).origin : (location.origin || '');
+const base = s.dataset.apiBase || selfOrigin;
+
   const id=s.dataset.widgetId; if(!id) return;
-  const base=s.dataset.apiBase || location.origin; // allow override if needed
+
   const r=await fetch(`${base}/api/widget/${encodeURIComponent(id)}`, { cache:'no-store' });
   if(!r.ok) return;
   const { type, config } = await r.json();

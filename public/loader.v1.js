@@ -83,55 +83,117 @@ function applyAnimation(el, name){
   if(name==='zoom'){ el.animate([{transform:'scale(.95)', opacity:0},{transform:'scale(1)',opacity:1}],{duration:160, easing:'ease-out'}); }
   if(name==='slide-up'){ el.animate([{transform:'translateY(12px)', opacity:0},{transform:'translateY(0)',opacity:1}],{duration:180, easing:'ease-out'}); }
 }
+function placePanelRelative(panel, anchorRect, placement, offset=10) {
+  // panel is position:fixed, so use viewport coords from getBoundingClientRect()
+  const { width: pw, height: ph } = panel.getBoundingClientRect(); // after content is set
+  let top = 0, left = 0;
 
-function renderBannerOverlay(cfg){
+  if (placement === 'top') {
+    top = anchorRect.top - ph - offset;
+    left = anchorRect.left + (anchorRect.width - pw)/2;
+  } else if (placement === 'bottom') {
+    top = anchorRect.bottom + offset;
+    left = anchorRect.left + (anchorRect.width - pw)/2;
+  } else if (placement === 'left') {
+    top = anchorRect.top + (anchorRect.height - ph)/2;
+    left = anchorRect.left - pw - offset;
+  } else { // right
+    top = anchorRect.top + (anchorRect.height - ph)/2;
+    left = anchorRect.right + offset;
+  }
+
+  // keep on-screen (basic clamping)
+  top = Math.max(8, Math.min(top, window.innerHeight - ph - 8));
+  left = Math.max(8, Math.min(left, window.innerWidth - pw - 8));
+
+  panel.style.top = `${Math.round(top)}px`;
+  panel.style.left = `${Math.round(left)}px`;
+}
+
+function renderBannerOverlay(cfg, opts={}) {
   const portal = getPortal();
-
-  // backplate root that can hold backdrop + panel
   const wrap = document.createElement('div');
   wrap.style.position='fixed';
   wrap.style.inset='0';
   wrap.style.pointerEvents='auto';
 
-  // backdrop (optional)
-  let backdrop=null;
-  if(cfg.backdrop || cfg.kind==='modal'){
-    backdrop=document.createElement('div');
-    backdrop.style.position='absolute';
-    backdrop.style.inset='0';
-    backdrop.style.background='rgba(0,0,0,.45)';
-    backdrop.style.backdropFilter='blur(2px)';
-    wrap.appendChild(backdrop);
-  }
-
-  // panel container
+  // panel container (fixed so we can place via viewport coords)
   const panel=document.createElement('div');
-  const W=toUnit(cfg.size?.w,'px');
-  const H=toUnit(cfg.size?.h,'px');
-  panel.style.position='absolute';
-  panel.style.width= W==='auto' ? 'auto' : W;
-  if(H!=='auto') panel.style.height=H;
+  panel.style.position='fixed';
   panel.style.maxWidth = cfg.size?.maxW || 'min(92vw, 560px)';
-  panel.style.background = cfg.colors?.bg || '#111';
-  panel.style.color = cfg.colors?.fg || '#fff';
+  if (cfg.size?.w && cfg.size.w !== 'auto') panel.style.width = typeof cfg.size.w==='number'? cfg.size.w+'px' : cfg.size.w;
+  if (cfg.size?.h && cfg.size.h !== 'auto') panel.style.height = typeof cfg.size.h==='number'? cfg.size.h+'px' : cfg.size.h;
   panel.style.borderRadius = (cfg.radius ?? 12) + 'px';
   panel.style.boxShadow = cfg.shadow===false ? 'none' : '0 10px 30px rgba(0,0,0,.25)';
   panel.style.padding = (cfg.padding ?? 16) + 'px';
+  panel.style.display='grid';
+  panel.style.gap='12px';
+  panel.style.color = (cfg.text?.color) || '#fff';
+  panel.style.overflow='hidden';
 
-  // position
-  const pos = (cfg.position || (cfg.kind==='modal'?'center':'bottom-right'));
-  const edge = 20;
-  if(pos==='center'){
-    panel.style.top='50%'; panel.style.left='50%';
-    panel.style.transform='translate(-50%, -50%)';
-  } else {
-    if(pos.includes('bottom')) panel.style.bottom=edge+'px';
-    if(pos.includes('top')) panel.style.top=edge+'px';
-    if(pos.includes('right')) panel.style.right=edge+'px';
-    if(pos.includes('left')) panel.style.left=edge+'px';
+  // background: color + image + overlay
+  const bgColor = cfg.background?.color || '#111';
+  panel.style.backgroundColor = bgColor;
+  if (cfg.background?.image) {
+    panel.style.backgroundImage = `url("${cfg.background.image}")`;
+    panel.style.backgroundSize = cfg.bgFit || 'cover';
+    panel.style.backgroundPosition = cfg.bgPosition || 'center';
+    panel.style.backgroundRepeat = 'no-repeat';
+  }
+  if (cfg.bgOverlay) {
+    const overlay = document.createElement('div');
+    overlay.style.position='absolute'; overlay.style.inset='0';
+    overlay.style.background = cfg.bgOverlay;
+    // stack context for overlay
+    panel.style.position='fixed';
+    panel.appendChild(overlay);
   }
 
-  // close btn
+  // content wrapper (above overlay)
+  const contentWrap = document.createElement('div');
+  contentWrap.style.position='relative';
+  contentWrap.style.zIndex='1';
+  contentWrap.style.display='grid';
+  contentWrap.style.gap='10px';
+  contentWrap.style.textAlign = (cfg.text?.align || 'left');
+
+  // text html
+  const text = document.createElement('div');
+  text.innerHTML = (cfg.text?.html) || '';
+  contentWrap.appendChild(text);
+
+  // CTA button (absolute positioned inside panel if positional)
+  if (cfg.cta?.text && cfg.cta?.url) {
+    const cta = document.createElement('a');
+    cta.textContent = cfg.cta.text;
+    cta.href = cfg.cta.url; cta.target='_blank'; cta.rel='noopener';
+    cta.style.display='inline-block';
+    cta.style.padding='10px 14px';
+    cta.style.borderRadius='10px';
+    cta.style.background='rgba(255,255,255,.14)';
+    cta.style.color='currentColor';
+    cta.style.fontWeight='600';
+    if (!cfg.cta.position || cfg.cta.position === 'inline') {
+      // keep inline flow
+      contentWrap.appendChild(cta);
+    } else {
+      // position absolutely inside the panel
+      cta.style.position='absolute';
+      const pad = 14;
+      const pos = cfg.cta.position;
+      if (pos.includes('bottom')) cta.style.bottom = pad+'px';
+      if (pos.includes('top'))    cta.style.top    = pad+'px';
+      if (pos.includes('left'))   cta.style.left   = pad+'px';
+      if (pos.includes('right'))  cta.style.right  = pad+'px';
+      if (pos === 'center') {
+        cta.style.top='50%'; cta.style.left='50%';
+        cta.style.transform='translate(-50%, -50%)';
+      }
+      panel.appendChild(cta);
+    }
+  }
+
+  // close button
   const close=document.createElement('button');
   close.setAttribute('aria-label','Close');
   close.textContent='×';
@@ -139,56 +201,41 @@ function renderBannerOverlay(cfg){
   close.style.right='8px'; close.style.top='4px';
   close.style.border='0'; close.style.background='transparent';
   close.style.color='currentColor'; close.style.fontSize='20px'; close.style.cursor='pointer';
+
+  // layer order
   panel.appendChild(close);
-
-  // CONTENT by template
-  const inner=document.createElement('div');
-  inner.style.display='grid';
-  inner.style.gap='12px';
-  // simple templates
-  if(cfg.template==='image-left' && cfg.imageUrl){
-    inner.style.gridTemplateColumns='96px 1fr';
-    const img=document.createElement('img');
-    img.src=cfg.imageUrl; img.alt=''; img.style.width='96px'; img.style.height='96px'; img.style.objectFit='cover'; img.style.borderRadius='8px';
-    inner.appendChild(img);
-  }
-  // content HTML
-  const content=document.createElement('div');
-  content.innerHTML = cfg.contentHtml || '<b>Banner</b>';
-  inner.appendChild(content);
-
-  // CTA
-  if(cfg.cta?.text && cfg.cta?.url){
-    const a=document.createElement('a');
-    a.textContent = cfg.cta.text;
-    a.href = cfg.cta.url; a.target='_blank'; a.rel='noopener';
-    a.style.display='inline-block';
-    a.style.padding='10px 14px';
-    a.style.borderRadius='10px';
-    a.style.background='rgba(255,255,255,.12)';
-    a.style.color='currentColor';
-    a.style.textDecoration='none';
-    a.style.fontWeight='600';
-    inner.appendChild(a);
-  }
-
-  panel.appendChild(inner);
+  panel.appendChild(contentWrap);
   wrap.appendChild(panel);
   portal.appendChild(wrap);
 
   // interactions
-  function closeAll(){
-    wrap.remove();
-    document.removeEventListener('keydown', onKey);
-  }
+  function closeAll(){ wrap.remove(); window.removeEventListener('resize', onLayout); window.removeEventListener('scroll', onLayout, true); document.removeEventListener('keydown', onKey); }
   function onKey(e){ if(e.key==='Escape') closeAll(); }
-
-  close.addEventListener('click', closeAll);
-  if(backdrop){ backdrop.addEventListener('click', closeAll); }
   document.addEventListener('keydown', onKey);
 
-  applyAnimation(panel, cfg.animation || (pos==='center' ? 'zoom' : 'slide-up'));
+  // placement
+  const placement = cfg.placement || 'bottom';
+  const offset = cfg.offset ?? 10;
+  function onLayout(){
+    if (opts.anchorRect) {
+      panel.style.top='0px'; panel.style.left='0px'; // reset before measuring
+      // allow the browser to layout then measure
+      requestAnimationFrame(()=>{
+        placePanelRelative(panel, opts.anchorRect(), placement, offset);
+      });
+    }
+  }
+
+  // animate + first layout
+  applyAnimation(panel, cfg.animation || (placement==='bottom' ? 'slide-up':'fade'));
+  onLayout();
+  window.addEventListener('resize', onLayout);
+  window.addEventListener('scroll', onLayout, true);
+
+  close.addEventListener('click', closeAll);
+  return { destroy: closeAll };
 }
+
 
 function renderCompositeInline(root, cfg){
   // trigger button
@@ -205,12 +252,19 @@ function renderCompositeInline(root, cfg){
     font-weight:${t.weight??600}; padding:0 16px;
   `;
   btn.addEventListener('click', ()=>{
-    // frequency rules
     const key = `yx_seen_${cfg._slug}`;
     if(cfg.rules?.showOncePerSession && sessionStorage.getItem(key)) return;
-    renderBannerOverlay(cfg.banner || {});
+  
+    const rectNow = () => btn.getBoundingClientRect(); // live rect for scroll/resize
+    if ((cfg.banner?.mode || 'relative') === 'relative') {
+      renderBannerOverlay(cfg.banner || {}, { anchorRect: rectNow });
+    } else {
+      // fallback to your previous floating placement
+      renderBannerOverlay(cfg.banner || {});
+    }
     sessionStorage.setItem(key,'1');
   });
+  
   root.appendChild(btn);
 
   // auto-open

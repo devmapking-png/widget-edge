@@ -128,6 +128,121 @@
     const text = document.createElement('div');
     text.innerHTML = (cfg.text?.html) || '';
     contentWrap.appendChild(text);
+
+    // ---- map cfg.content.* if present (cards rail + partners row) ----
+const contentCfg = cfg.content;
+if (contentCfg) {
+  // heading
+  if (contentCfg.title && !cfg.text?.html) {
+    const h2 = document.createElement('h2');
+    h2.textContent = contentCfg.title;
+    h2.style.margin = '0 0 8px';
+    h2.style.fontSize = '28px';
+    h2.style.lineHeight = '1.2';
+    h2.style.fontWeight = '800';
+    contentWrap.appendChild(h2);
+  }
+
+  // description
+  if (contentCfg.description && !cfg.text?.html) {
+    const p = document.createElement('p');
+    p.textContent = contentCfg.description;
+    p.style.margin = '0 0 12px';
+    p.style.opacity = '0.9';
+    contentWrap.appendChild(p);
+  }
+
+  // cards rail
+  if (Array.isArray(contentCfg.cards) && contentCfg.cards.length) {
+    const title = document.createElement('h3');
+    title.textContent = contentCfg.cardsTitle || 'Take a look at what you can find';
+    title.style.margin = '6px 0 8px';
+    contentWrap.appendChild(title);
+
+    const rail = document.createElement('div');
+    rail.style.display = 'grid';
+    rail.style.gridAutoFlow = 'column';
+    rail.style.gridAutoColumns = 'minmax(240px, 1fr)';
+    rail.style.gap = '14px';
+    rail.style.overflowX = 'auto';
+    rail.style.padding = '4px 2px 10px 2px';
+
+    for (const it of contentCfg.cards) {
+      const card = document.createElement('a');
+      card.href = it.url || '#';
+      card.target = '_blank'; card.rel = 'noopener';
+      card.style.display = 'grid';
+      card.style.gridTemplateRows = '140px auto';
+      card.style.background = '#fff';
+      card.style.color = '#111';
+      card.style.textDecoration = 'none';
+      card.style.borderRadius = '18px';
+      card.style.boxShadow = '0 8px 22px rgba(0,0,0,.18)';
+      card.style.overflow = 'hidden';
+
+      const img = document.createElement('img');
+      img.src = it.imageUrl || it.image || '';
+      img.alt = it.title || '';
+      img.style.width = '100%'; img.style.height = '140px'; img.style.objectFit = 'cover';
+      card.appendChild(img);
+
+      const body = document.createElement('div');
+      body.style.padding = '12px 14px';
+      body.style.display = 'grid';
+      body.style.gap = '6px';
+
+      if (it.tag){
+        const tag = document.createElement('span');
+        tag.textContent = it.tag;
+        tag.style.alignSelf = 'start';
+        tag.style.fontSize = '12px';
+        tag.style.background = 'rgba(0,0,0,.08)';
+        tag.style.borderRadius = '10px';
+        tag.style.padding = '4px 8px';
+        body.appendChild(tag);
+      }
+
+      const ttl = document.createElement('div');
+      ttl.textContent = it.title || '';
+      ttl.style.fontWeight = '700';
+      ttl.style.lineHeight = '1.2';
+      body.appendChild(ttl);
+
+      card.appendChild(body);
+      rail.appendChild(card);
+    }
+    contentWrap.appendChild(rail);
+  }
+
+  // partners row
+  if (Array.isArray(contentCfg.partners) && contentCfg.partners.length) {
+    const title = document.createElement('h3');
+    title.textContent = contentCfg.partnersTitle || 'Our Partners';
+    title.style.margin = '10px 0 8px';
+    contentWrap.appendChild(title);
+
+    const row = document.createElement('div');
+    row.style.display = 'flex';
+    row.style.flexWrap = 'wrap';
+    row.style.gap = '18px';
+    row.style.alignItems = 'center';
+
+    for (const p of contentCfg.partners) {
+      const a = document.createElement('a');
+      a.href = p.url || '#'; a.target = '_blank'; a.rel = 'noopener';
+
+      const img = document.createElement('img');
+      img.src = p.logoUrl || p.logo; img.alt = p.alt || 'Partner';
+      img.style.height = '28px';
+      img.style.objectFit = 'contain';
+
+      a.appendChild(img);
+      row.appendChild(a);
+    }
+    contentWrap.appendChild(row);
+  }
+}
+
   
     if (cfg.cta?.text && cfg.cta?.url){
       const cta = document.createElement('a');

@@ -38,6 +38,15 @@ async function mount(s){
 
   // 🔽 DISPATCH by type
   const t = type || config?.type || 'button';
+  let root;
+if ((config.install?.mode || 'inline') === 'floating') {
+  root = mountFloatingAnchor(s, { install: config.install });
+} else {
+  const host = document.createElement('div');
+  root = host.attachShadow ? host.attachShadow({mode:'open'}) : host;
+  s.parentNode.insertBefore(host, s.nextSibling);
+}
+
   if (t === 'composite') {
     const cfg = { ...config, _slug: id }; // pass slug for session key
     renderCompositeInline(root, cfg);
@@ -55,6 +64,25 @@ async function mount(s){
     try{ navigator.sendBeacon?.(config.analytics.url, JSON.stringify({ e:'impression', id })) }catch{}
   }
 }
+function mountFloatingAnchor(s, cfg){
+  const host = document.createElement('div');
+  host.style.position = 'fixed';
+  const anchor = cfg.install?.anchor || 'bottom-right';
+  const ox = cfg.install?.offsetX ?? 20;
+  const oy = cfg.install?.offsetY ?? 20;
+  host.style.zIndex = String(cfg.install?.zIndex ?? 2147483647);
+
+  if (anchor.includes('bottom')) host.style.bottom = oy + 'px';
+  if (anchor.includes('top'))    host.style.top    = oy + 'px';
+  if (anchor.includes('right'))  host.style.right  = ox + 'px';
+  if (anchor.includes('left'))   host.style.left   = ox + 'px';
+
+  // shadow DOM for isolation
+  const root = host.attachShadow ? host.attachShadow({mode:'open'}) : host;
+  s.parentNode.insertBefore(host, s.nextSibling);
+  return root;
+}
+
 
 // helpers for CSS units
 function toUnit(v, fallback = 'px'){ return (v==null||v==='auto') ? 'auto' : (typeof v==='number'? `${v}${fallback}` : v); }
@@ -163,6 +191,9 @@ function renderBannerOverlay(cfg, opts={}) {
   contentWrap.appendChild(text);
 
   // CTA button (absolute positioned inside panel if positional)
+  if (cfg.cta?.bg)   cta.style.background = cfg.cta.bg;
+if (cfg.cta?.color) cta.style.color = cfg.cta.color;
+
   if (cfg.cta?.text && cfg.cta?.url) {
     const cta = document.createElement('a');
     cta.textContent = cfg.cta.text;
@@ -264,6 +295,13 @@ function renderCompositeInline(root, cfg){
     }
     sessionStorage.setItem(key,'1');
   });
+  if (t.icon){
+    const i = document.createElement('span');
+    i.textContent = '★'; // placeholder; you can map "sparkles"|"chat"|"info" to glyphs or an SVG sprite
+    i.style.marginRight = '8px';
+    i.style.color = t.iconColor || 'currentColor';
+    btn.prepend(i);
+  }
   
   root.appendChild(btn);
 

@@ -40,7 +40,7 @@
       host.style.position='fixed';
       host.style.top='0'; host.style.left='0';
       host.style.width='100%'; host.style.height='100%';
-      host.style.pointerEvents='auto';          // ✅ allow clicks
+      host.style.pointerEvents='none';          // ✅ portal never blocks clicks
       host.style.zIndex='2147483647';
       document.body.appendChild(host);
       host._shadow = host.attachShadow ? host.attachShadow({mode:'open'}) : host;
@@ -55,7 +55,7 @@
   }
   
   function placePanelRelative(panel, anchorRect, placement, offset=10){
-    const { width: pw, height: ph } = panel.getBoundingClientRect(); // after content is set
+    const { width: pw, height: ph } = panel.getBoundingClientRect();
     let top=0, left=0;
   
     if(placement==='top'){
@@ -88,7 +88,9 @@
     const wrap = document.createElement('div');
     wrap.style.position='fixed';
     wrap.style.inset='0';
-    wrap.style.pointerEvents='auto';
+    wrap.style.pointerEvents='auto';        // ✅ only the wrap is interactive
+    // clicking backdrop outside panel closes if no explicit backdrop element is used
+    // (we keep behavior controlled via close button to avoid accidental closes)
   
     const panel = document.createElement('div');
     panel.style.position='fixed';
@@ -102,10 +104,7 @@
     panel.style.gap='12px';
     panel.style.color = (cfg.text?.color) || '#fff';
     panel.style.overflow='hidden';
-  
-    // background
-    const bgColor = cfg.background?.color || '#111';
-    panel.style.backgroundColor = bgColor;
+    panel.style.backgroundColor = cfg.background?.color || '#111';
     if (cfg.background?.image){
       panel.style.backgroundImage  = `url("${cfg.background.image}")`;
       panel.style.backgroundSize   = cfg.bgFit || 'cover';
@@ -119,7 +118,6 @@
       panel.appendChild(overlay);
     }
   
-    // content wrapper (above overlay)
     const contentWrap = document.createElement('div');
     contentWrap.style.position='relative';
     contentWrap.style.zIndex='1';
@@ -127,12 +125,10 @@
     contentWrap.style.gap='10px';
     contentWrap.style.textAlign = (cfg.text?.align || 'left');
   
-    // content html
     const text = document.createElement('div');
     text.innerHTML = (cfg.text?.html) || '';
     contentWrap.appendChild(text);
   
-    // CTA
     if (cfg.cta?.text && cfg.cta?.url){
       const cta = document.createElement('a');
       cta.textContent = cfg.cta.text;
@@ -161,7 +157,6 @@
       }
     }
   
-    // close
     const close = document.createElement('button');
     close.setAttribute('aria-label','Close');
     close.textContent='×';
@@ -208,23 +203,42 @@
   // -------------------------------
   function renderCompositeInline(root, cfg){
     const t = cfg.trigger || {};
+    const isFloating = (cfg.install?.mode || 'inline') === 'floating';
+    const wantIconOnly = isFloating && (t.iconOnly === true || (!t.text && (t.icon || t.iconSvg)));
+  
     const btn = document.createElement('button');
-    btn.textContent = t.text || 'Open';
-    const W = toUnit(t.size?.w,'px'), H = toUnit(t.size?.h,'px');
+    btn.setAttribute('type','button');
+    btn.setAttribute('aria-label', t.ariaLabel || t.text || 'Open widget');
+  
+    const W = toUnit(t.size?.w ?? (wantIconOnly ? 56 : 200), 'px');
+    const H = toUnit(t.size?.h ?? (wantIconOnly ? 56 : 48), 'px');
+  
     btn.style.cssText = `
       background:${t.colors?.bg||'#111'};
       color:${t.colors?.fg||'#fff'};
       width:${W==='auto'?'auto':W};
       height:${H==='auto'?'auto':H};
-      border:0;border-radius:${(t.radius??10)}px;cursor:pointer;
-      font-weight:${t.weight??600}; padding:0 16px;
+      border:0;
+      border-radius:${(t.radius ?? (wantIconOnly ? 999 : 10))}px;
+      cursor:pointer;
+      ${wantIconOnly ? 'padding:0; display:inline-flex; align-items:center; justify-content:center;' : 'padding:0 16px; font-weight:'+(t.weight??600)+';'}
     `;
-    if (t.icon){
-      const i=document.createElement('span');
-      i.textContent='★';
-      i.style.marginRight='8px';
-      i.style.color=t.iconColor||'currentColor';
-      btn.prepend(i);
+  
+    if (wantIconOnly){
+      const i = document.createElement('span');
+      i.textContent = '★'; // map to an SVG/glyph of your choice
+      i.style.lineHeight = '1';
+      i.style.color = t.iconColor || 'currentColor';
+      btn.appendChild(i);
+    } else {
+      if (t.icon){
+        const i = document.createElement('span');
+        i.textContent = '★';
+        i.style.marginRight = '8px';
+        i.style.color = t.iconColor || 'currentColor';
+        btn.appendChild(i);
+      }
+      btn.appendChild(document.createTextNode(t.text || 'Open'));
     }
   
     btn.addEventListener('click', ()=>{
@@ -237,7 +251,11 @@
       } else {
         renderBannerOverlay(cfg.banner || {});
       }
-      sessionStorage.setItem(key,'1');
+  
+      // ✅ only set the session flag when the rule is enabled
+      if (cfg.rules?.showOncePerSession) {
+        sessionStorage.setItem(key,'1');
+      }
     });
   
     root.appendChild(btn);
@@ -254,7 +272,6 @@
   async function mount(s){
     const id = s.dataset.widgetId; if(!id) return;
   
-    // derive base from the loader's own src URL
     const srcUrl = s.getAttribute('src');
     const selfOrigin = srcUrl ? new URL(srcUrl, document.baseURI).origin : (location.origin || '');
     const base = s.dataset.apiBase || selfOrigin;
@@ -266,7 +283,6 @@
     }
     const { type, config } = await r.json();
   
-    // choose host/root
     const installMode = (config?.install?.mode || 'inline');
     const host = document.createElement('div');
     if (installMode === 'floating'){
@@ -282,7 +298,6 @@
     }
     const root = host.attachShadow ? host.attachShadow({mode:'open'}) : host;
   
-    // insert once, then render
     s.parentNode.insertBefore(host, s.nextSibling);
     addStyle(root, config?.style);
   

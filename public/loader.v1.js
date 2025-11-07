@@ -119,9 +119,10 @@ function _buildDetailedContent(panel, banner) {
 }
 
 /* =========================================================
- [C-2] Classic Banner Content Builder
- - FIX: Caps the CTA button width at 120px.
- - FIX: Adjusts flexbox properties to allow the title to expand.
+ [C-2] Classic Banner Content Builder (REVISED LAYOUT)
+ - Groups title/description to reliably push the button to the right.
+ - Sets button width to 25% with a 150px max-width.
+ - Adds text trimming to the button if the content overflows.
 ========================================================= */
 function _buildClassicContent(panel, banner) {
   const content = banner.content || {};
@@ -130,36 +131,44 @@ function _buildClassicContent(panel, banner) {
   panel.style.color = banner.text?.color || '#fff';
   if (banner.background?.image) { panel.style.backgroundImage = `url("${banner.background.image}")`; panel.style.backgroundSize = banner.bgFit || 'cover'; }
 
-  const inner = el('div', { position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '24px', padding: '16px 40px 16px 24px', width: '100%', boxSizing: 'border-box' });
+  const inner = el('div', { position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', padding: '16px 40px 16px 24px', width: '100%', boxSizing: 'border-box' });
   inner.classList.add('yx-banner-inner');
 
-  // UPDATED: Changed flex property to allow the title to grow.
+  // --- NEW: Text Group for Title and Description ---
+  const textGroup = el('div', { flex: '1 1 auto', overflow: 'hidden' }); // This group will grow and push the button
+
   if (content.title) {
-    const titleEl = el('div', { fontWeight: '600', fontSize: '20px', lineHeight: '1.3', flex: '1 1 0' }); // Will now take up available space
+    const titleEl = el('div', { fontWeight: '600', fontSize: '20px', lineHeight: '1.3', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' });
     titleEl.classList.add('yx-title');
     titleEl.textContent = content.title;
-    inner.appendChild(titleEl);
+    textGroup.appendChild(titleEl);
   }
-
-  // UPDATED: Changed flex property to be less aggressive.
   if (content.description) {
-    const descEl = el('div', { fontSize: '15px', opacity: '0.85', lineHeight: '1.4', flex: '0 1 auto', whiteSpace: 'nowrap' }); // Won't grow, can shrink
+    const descEl = el('div', { fontSize: '15px', opacity: '0.85', lineHeight: '1.4', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: '2px' });
     descEl.classList.add('yx-description');
     descEl.textContent = content.description;
-    inner.appendChild(descEl);
+    textGroup.appendChild(descEl);
   }
 
-  // UPDATED: Added maxWidth and adjusted flex properties.
+  inner.appendChild(textGroup); // Add the whole group to the banner
+
+  // --- UPDATED: Button with new sizing and text-trimming rules ---
   if (ctaCfg.text && ctaCfg.url) {
     const ctaBtn = el('a', {
       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
       background: ctaCfg.bg || '#c95624', color: ctaCfg.color || '#fff', padding: '12px 18px',
       borderRadius: '10px', textDecoration: 'none', fontWeight: '600',
-      whiteSpace: 'nowrap', flexShrink: '0', // Ensures button does not shrink
-      maxWidth: '120px' // Caps the button width
+      flexShrink: '0', // Prevents the button from shrinking
+      boxSizing: 'border-box',
+      flexBasis: '25%', // Base width
+      maxWidth: '150px', // Max width
+      overflow: 'hidden', // Required for text trimming
+      textOverflow: 'ellipsis', // Adds the "..."
+      whiteSpace: 'nowrap' // Prevents text from wrapping
     });
     ctaBtn.classList.add('yx-cta-btn');
     ctaBtn.href = ctaCfg.url; ctaBtn.target = '_blank'; ctaBtn.rel = 'noopener';
+
     const pinIconSvg = getIconSvgByName('pin');
     if (pinIconSvg) {
       const iconSpan = el('span', { display: 'flex', alignItems: 'center' });

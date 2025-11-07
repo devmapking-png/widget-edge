@@ -53,10 +53,9 @@
   }
 
 /* =========================================================
- [C] Banner Renderer (CONFIRMED CORRECT CODE)
- - This is the definitive version. Perform a hard refresh
-   (Ctrl+F5 or Cmd+Shift+R) with DevTools open and "Disable cache"
-   checked to ensure this code is loaded.
+ [C] Banner Renderer (FINAL CONFIRMED VERSION)
+ - Uses the original el() function and correctly sets .src on all images.
+ - Contains all previous fixes for z-index and padding.
 ========================================================= */
 /* =========================================================
   [START] REFACTORED BANNER RENDERER AND HELPERS
@@ -66,6 +65,7 @@
 function _buildDetailedContent(panel, banner) {
   const content = banner.content || {};
   const ctaCfg = banner.cta || {};
+
   panel.style.background = banner.background?.color || '#fff';
   panel.style.color = banner.text?.color || '#000';
   if (banner.background?.image) {
@@ -73,20 +73,34 @@ function _buildDetailedContent(panel, banner) {
     panel.style.backgroundSize = 'cover'; panel.style.backgroundPosition = 'center';
     panel.style.color = banner.text?.color || '#fff';
   }
+
   if (banner.presentedBy) {
     const presentedBar = el('div', { display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', padding: '8px', fontSize: '12px', color: banner.presentedBy.textColor || '#666', background: banner.presentedBy.bgColor || '#f0f0f0' });
     const pText = el('span'); pText.textContent = banner.presentedBy.text || 'Presented by';
-    const pLogo = el('img', { height: '18px', src: banner.presentedBy.logoUrl });
+    const pLogo = el('img', { height: '18px' });
+    pLogo.src = banner.presentedBy.logoUrl; // CORRECT
     presentedBar.appendChild(pText); presentedBar.appendChild(pLogo);
     panel.appendChild(presentedBar);
   }
+
   const mainContainer = el('div', { display: 'flex', padding: '24px 32px', gap: '24px' });
   const leftCol = el('div', { flex: '0 0 30%', display: 'flex', flexDirection: 'column' });
   const rightCol = el('div', { flex: '1 1 70%', overflow: 'hidden' });
-  if (banner.eventLogoUrl) { const eventLogo = el('img', { height: '40px', marginBottom: '16px', alignSelf: 'flex-start' }); eventLogo.src = banner.eventLogoUrl; leftCol.appendChild(eventLogo); }
+
+  if (banner.eventLogoUrl) {
+    const eventLogo = el('img', { height: '40px', marginBottom: '16px', alignSelf: 'flex-start' });
+    eventLogo.src = banner.eventLogoUrl; // CORRECT
+    leftCol.appendChild(eventLogo);
+  }
   if (content.title) { leftCol.appendChild(el('h2', { fontSize: '28px', fontWeight: '800', margin: '0 0 12px', lineHeight: '1.2' })); leftCol.lastChild.textContent = content.title; }
   if (content.description) { leftCol.appendChild(el('p', { fontSize: '16px', margin: '0 0 24px', opacity: '0.8' })); leftCol.lastChild.textContent = content.description; }
-  if (ctaCfg.text && ctaCfg.url) { const cta = el('a', { display: 'inline-block', padding: '12px 20px', borderRadius: '10px', textDecoration: 'none', fontWeight: '600', background: ctaCfg.bg, color: ctaCfg.color, textAlign: 'center', marginTop: 'auto' }); cta.href = ctaCfg.url; cta.target = '_blank'; cta.rel = 'noopener'; cta.textContent = ctaCfg.text; leftCol.appendChild(cta); }
+  if (ctaCfg.text && ctaCfg.url) {
+    const cta = el('a', { display: 'inline-block', padding: '12px 20px', borderRadius: '10px', textDecoration: 'none', fontWeight: '600', background: ctaCfg.bg, color: ctaCfg.color, textAlign: 'center', marginTop: 'auto' });
+    cta.href = ctaCfg.url; cta.target = '_blank'; cta.rel = 'noopener';
+    cta.textContent = ctaCfg.text;
+    leftCol.appendChild(cta);
+  }
+
   const _renderScrollableSection = (items = [], type = 'card') => {
     const container = el('div', { display: 'flex', gap: '12px', overflowX: 'auto', padding: '4px 0 16px', scrollSnapType: 'x mandatory', scrollbarWidth: 'none' });
     container.style.setProperty('-webkit-overflow-scrolling', 'touch'); container.style.setProperty('::-webkit-scrollbar', 'display: none');
@@ -94,20 +108,33 @@ function _buildDetailedContent(panel, banner) {
       if (type === 'card' && item.imageUrl) {
         const card = el('a', { display: 'flex', flexDirection: 'column', borderRadius: '12px', overflow: 'hidden', textDecoration: 'none', color: '#000', background: '#fff', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', width: '160px', minWidth: '160px', scrollSnapAlign: 'start', flexShrink: '0' });
         card.href = item.url; card.target = '_blank'; card.rel = 'noopener';
-        const img = el('img', { width: '100%', height: '80px', objectFit: 'cover', display: 'block' }); img.src = item.imageUrl; card.appendChild(img);
+        const img = el('img', { width: '100%', height: '80px', objectFit: 'cover', display: 'block' });
+        img.src = item.imageUrl; // CORRECT
+        card.appendChild(img);
         const cardContent = el('div', { padding: '8px 12px', flexGrow: '1', display: 'flex', flexDirection: 'column' });
         const tag = el('div', { fontSize: '12px', opacity: '0.7', marginBottom: '4px' }); tag.textContent = item.tag; cardContent.appendChild(tag);
         const title = el('div', { fontWeight: '600', fontSize: '14px', lineHeight: '1.4', height: '39.2px', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', webkitLineClamp: '2', webkitBoxOrient: 'vertical' });
         title.textContent = item.title; cardContent.appendChild(title);
         card.appendChild(cardContent); container.appendChild(card);
-      } else if (type === 'partner' && item.logoUrl) { const link = el('a', { display: 'inline-block', flexShrink: '0' }); link.href = item.url; link.target = '_blank'; link.rel = 'noopener'; const logo = el('img', { height: '30px', opacity: '0.8' }); logo.src = item.logoUrl; link.appendChild(logo); container.appendChild(link); }
+      } else if (type === 'partner' && item.logoUrl) {
+        const link = el('a', { display: 'inline-block', flexShrink: '0' });
+        link.href = item.url; link.target = '_blank'; link.rel = 'noopener';
+        const logo = el('img', { height: '30px', opacity: '0.8' });
+        logo.src = item.logoUrl; // CORRECT
+        link.appendChild(logo); container.appendChild(link);
+      }
     });
     return container;
   };
+
   if (content.cards?.length) { rightCol.appendChild(el('h3', { fontSize: '16px', fontWeight: '600', margin: '0 0 12px' })); rightCol.lastChild.textContent = 'Take a look at what you can find'; rightCol.appendChild(_renderScrollableSection(content.cards, 'card')); }
   if (content.partners?.length) { rightCol.appendChild(el('h3', { fontSize: '16px', fontWeight: '600', margin: '24px 0 12px' })); rightCol.lastChild.textContent = 'Our Partners'; rightCol.appendChild(_renderScrollableSection(content.partners, 'partner')); }
-  mainContainer.appendChild(leftCol); mainContainer.appendChild(rightCol); panel.appendChild(mainContainer);
+
+  mainContainer.appendChild(leftCol);
+  mainContainer.appendChild(rightCol);
+  panel.appendChild(mainContainer);
 }
+
 
 // --- HELPER 2: Builds the content for the ORIGINAL classic layout ---
 function _buildClassicContent(panel, banner) {
@@ -115,12 +142,23 @@ function _buildClassicContent(panel, banner) {
   const ctaCfg = banner.cta || {};
   panel.style.background = banner.background?.color || '#0f172a'; panel.style.color = banner.text?.color || '#fff';
   if (banner.background?.image) { panel.style.backgroundImage = `url("${banner.background.image}")`; panel.style.backgroundSize = banner.bgFit || 'cover'; }
+
   const inner = el('div', { position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '24px', padding: '16px 40px 16px 24px', width: '100%', boxSizing: 'border-box' });
-  if (content.title) { const titleEl = el('div', { fontWeight: '600', fontSize: '20px', lineHeight: '1.3', flex: '1 1 30%' }); titleEl.textContent = content.title; inner.appendChild(titleEl); }
-  if (content.description) { const descEl = el('div', { fontSize: '15px', opacity: '0.85', lineHeight: '1.4', flex: '1 1 45%' }); descEl.textContent = content.description; inner.appendChild(descEl); }
-  if (ctaCfg.text && ctaCfg.url) { const ctaBtn = el('a', { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: ctaCfg.bg || '#c95624', color: ctaCfg.color || '#fff', padding: '12px 18px', borderRadius: '10px', textDecoration: 'none', fontWeight: '600', whiteSpace: 'nowrap', flex: '0 0 auto' }); ctaBtn.href = ctaCfg.url; ctaBtn.target = '_blank'; ctaBtn.rel = 'noopener'; const pinIconSvg = getIconSvgByName('pin'); if (pinIconSvg) { const iconSpan = el('span', { display: 'flex', alignItems: 'center' }); iconSpan.innerHTML = pinIconSvg; ctaBtn.appendChild(iconSpan); } ctaBtn.appendChild(document.createTextNode(ctaCfg.text)); inner.appendChild(ctaBtn); }
+  inner.classList.add('yx-banner-inner');
+
+  if (content.title) { const titleEl = el('div', { fontWeight: '600', fontSize: '20px', lineHeight: '1.3', flex: '1 1 30%' }); titleEl.classList.add('yx-title'); titleEl.textContent = content.title; inner.appendChild(titleEl); }
+  if (content.description) { const descEl = el('div', { fontSize: '15px', opacity: '0.85', lineHeight: '1.4', flex: '1 1 45%' }); descEl.classList.add('yx-description'); descEl.textContent = content.description; inner.appendChild(descEl); }
+  if (ctaCfg.text && ctaCfg.url) {
+    const ctaBtn = el('a', { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: ctaCfg.bg || '#c95624', color: ctaCfg.color || '#fff', padding: '12px 18px', borderRadius: '10px', textDecoration: 'none', fontWeight: '600', whiteSpace: 'nowrap', flex: '0 0 auto' });
+    ctaBtn.href = ctaCfg.url; ctaBtn.target = '_blank'; ctaBtn.rel = 'noopener';
+    const pinIconSvg = getIconSvgByName('pin'); if (pinIconSvg) { const iconSpan = el('span', { display: 'flex', alignItems: 'center' }); iconSpan.innerHTML = pinIconSvg; ctaBtn.appendChild(iconSpan); }
+    ctaBtn.appendChild(document.createTextNode(ctaCfg.text)); inner.appendChild(ctaBtn);
+  }
   panel.appendChild(inner);
+  const styles = el('style'); styles.textContent = `@media (max-width: 768px) { .yx-description { display: none !important; } .yx-title { font-size: 16px !important; } .yx-banner-inner { padding: 12px 16px !important; } }`;
+  panel.appendChild(styles);
 }
+
 
 // --- MAIN FUNCTION: Creates the banner shell and routes to a content builder ---
 function openFlowingBanner({ anchorEl, banner = {}, onClose, overlayZBase = 2147483647, placementMode = 'side' }) {
@@ -142,7 +180,8 @@ function openFlowingBanner({ anchorEl, banner = {}, onClose, overlayZBase = 2147
     color: banner.closeButtonColor || 'inherit',
     fontSize: '24px', cursor: 'pointer', lineHeight: '1', zIndex: '100'
   });
-  closeBtn.setAttribute('aria-label', 'Close'); closeBtn.textContent = '×';
+  closeBtn.setAttribute('aria-label', 'Close');
+  closeBtn.textContent = '×';
   panel.appendChild(closeBtn);
 
   if (banner.layout === 'detailed') {

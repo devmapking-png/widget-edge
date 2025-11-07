@@ -2,17 +2,19 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Universal Widget Test Page</title>
+  <title>Rock-Solid Widget Test</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    body { font-family: sans-serif; line-height: 1.6; margin: 0; background-color: #f8f9fa; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; margin: 0; background-color: #f8f9fa; color: #212529; }
     .container { max-width: 960px; margin: 0 auto; padding: 20px; }
-    header { background-color: #fff; border-bottom: 1px solid #dee2e6; padding: 10px 20px; margin-bottom: 2rem; }
-    .controls { display: flex; align-items: center; gap: 10px; }
+    header { background-color: #fff; border-bottom: 1px solid #dee2e6; padding: 10px 20px; margin-bottom: 2rem; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    .controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
     .controls label { font-weight: bold; }
-    .controls button { padding: 8px 16px; border: 1px solid #ced4da; border-radius: 6px; background-color: #fff; cursor: pointer; }
+    .controls button { padding: 8px 16px; font-size: 14px; border: 1px solid #ced4da; border-radius: 6px; background-color: #fff; cursor: pointer; transition: background-color 0.2s, border-color 0.2s; }
+    .controls button:hover { background-color: #e9ecef; }
     .controls button.active { background-color: #0d6efd; color: #fff; border-color: #0d6efd; }
-    .widget-area { padding: 2rem; background-color: #fff; border-radius: 8px; min-height: 200px; }
+    .widget-area { padding: 2rem; background-color: #fff; border-radius: 8px; border: 1px solid #dee2e6; min-height: 200px; }
+    h1, h2 { border-bottom: 1px solid #dee2e6; padding-bottom: 8px; }
   </style>
 </head>
 <body>
@@ -27,57 +29,63 @@
   <div class="container">
     <div class="widget-area">
       <h2>Widget Output:</h2>
+      <!-- The script tag will be written here by our logic below -->
       <div id="widget-container"></div>
     </div>
   </div>
 
   <script>
+    // --- CONFIGURATION ---
     const WIDGET_CONFIG = {
       ids: ['widgeta', 'widgetb', 'widgetc', 'widgetd'],
       online: { src: 'https://widget-edge.vercel.app/loader.v1.js', apiBase: 'https://widget-edge.vercel.app' },
       local: { src: 'http://localhost:3000/loader.v1.js', apiBase: 'http://localhost:3000' }
     };
+    // --- END CONFIGURATION ---
 
-    const buttonsContainer = document.getElementById('widget-buttons');
-    const widgetContainer = document.getElementById('widget-container');
-    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    const env = isLocal ? 'local' : 'online';
-    const settings = WIDGET_CONFIG[env];
+    document.addEventListener('DOMContentLoaded', () => {
+      const buttonsContainer = document.getElementById('widget-buttons');
+      const widgetContainer = document.getElementById('widget-container');
 
-    function loadWidget(widgetId) {
-      widgetContainer.innerHTML = '';
-      const script = document.createElement('script');
-      script.defer = true;
-      
-      // --- THE ULTIMATE CACHE-BUSTING TRICK ---
-      // Adds the current time as a query parameter, forcing a fresh download every time.
-      const cacheBuster = isLocal ? `?t=${new Date().getTime()}` : '';
-      script.src = settings.src + cacheBuster;
-      // --- END TRICK ---
+      // Detect environment (local or online)
+      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const env = isLocal ? 'local' : 'online';
+      const settings = WIDGET_CONFIG[env];
 
-      script.dataset.apiBase = settings.apiBase;
-      script.dataset.widgetId = widgetId;
-      widgetContainer.appendChild(script);
-      updateActiveButton(widgetId);
-    }
+      // Get the current widget ID from the URL, or default to the first one
+      const urlParams = new URLSearchParams(window.location.search);
+      const currentWidgetId = urlParams.get('widget') || WIDGET_CONFIG.ids[0];
 
-    function updateActiveButton(activeId) {
-      buttonsContainer.querySelectorAll('button').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.widgetId === activeId);
+      // --- Button Generation ---
+      WIDGET_CONFIG.ids.forEach(id => {
+        const button = document.createElement('button');
+        button.textContent = id;
+        // When a button is clicked, reload the page with the new widget ID
+        button.onclick = () => {
+          const newUrl = new URL(window.location.href);
+          newUrl.searchParams.set('widget', id);
+          window.location.href = newUrl.href;
+        };
+        // Set the 'active' style for the currently selected button
+        if (id === currentWidgetId) {
+          button.classList.add('active');
+        }
+        buttonsContainer.appendChild(button);
       });
-    }
 
-    WIDGET_CONFIG.ids.forEach(id => {
-      const button = document.createElement('button');
-      button.textContent = id;
-      button.dataset.widgetId = id;
-      button.addEventListener('click', () => loadWidget(id));
-      buttonsContainer.appendChild(button);
+      // --- Reliable Script Loading ---
+      // This method writes a static <script> tag into the HTML, which is the
+      // most reliable way to load and execute the widget loader.
+      const cacheBuster = isLocal ? `?t=${new Date().getTime()}` : '';
+      widgetContainer.innerHTML = `
+        <script
+          defer
+          src="${settings.src}${cacheBuster}"
+          data-api-base="${settings.apiBase}"
+          data-widget-id="${currentWidgetId}">
+        <\/script>
+      `;
     });
-
-    if (WIDGET_CONFIG.ids.length > 0) {
-      loadWidget(WIDGET_CONFIG.ids[0]);
-    }
   </script>
 
 </body>

@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Universal Widget Test Page</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: sans-serif; line-height: 1.6; margin: 0; background-color: #f8f9fa; }
+    .container { max-width: 960px; margin: 0 auto; padding: 20px; }
+    header { background-color: #fff; border-bottom: 1px solid #dee2e6; padding: 10px 20px; margin-bottom: 2rem; }
+    .controls { display: flex; align-items: center; gap: 10px; }
+    .controls label { font-weight: bold; }
+    .controls button { padding: 8px 16px; border: 1px solid #ced4da; border-radius: 6px; background-color: #fff; cursor: pointer; }
+    .controls button.active { background-color: #0d6efd; color: #fff; border-color: #0d6efd; }
+    .widget-area { padding: 2rem; background-color: #fff; border-radius: 8px; min-height: 200px; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="container controls">
+      <label>Select Widget:</label>
+      <div id="widget-buttons"></div>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="widget-area">
+      <h2>Widget Output:</h2>
+      <div id="widget-container"></div>
+    </div>
+  </div>
+
+  <script>
+    const WIDGET_CONFIG = {
+      ids: ['widgeta', 'widgetb', 'widgetc', 'widgetd'],
+      online: { src: 'https://widget-edge.vercel.app/loader.v1.js', apiBase: 'https://widget-edge.vercel.app' },
+      local: { src: 'http://localhost:3000/loader.v1.js', apiBase: 'http://localhost:3000' }
+    };
+
+    const buttonsContainer = document.getElementById('widget-buttons');
+    const widgetContainer = document.getElementById('widget-container');
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const env = isLocal ? 'local' : 'online';
+    const settings = WIDGET_CONFIG[env];
+
+    function loadWidget(widgetId) {
+      widgetContainer.innerHTML = '';
+      const script = document.createElement('script');
+      script.defer = true;
+      
+      // --- THE ULTIMATE CACHE-BUSTING TRICK ---
+      // Adds the current time as a query parameter, forcing a fresh download every time.
+      const cacheBuster = isLocal ? `?t=${new Date().getTime()}` : '';
+      script.src = settings.src + cacheBuster;
+      // --- END TRICK ---
+
+      script.dataset.apiBase = settings.apiBase;
+      script.dataset.widgetId = widgetId;
+      widgetContainer.appendChild(script);
+      updateActiveButton(widgetId);
+    }
+
+    function updateActiveButton(activeId) {
+      buttonsContainer.querySelectorAll('button').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.widgetId === activeId);
+      });
+    }
+
+    WIDGET_CONFIG.ids.forEach(id => {
+      const button = document.createElement('button');
+      button.textContent = id;
+      button.dataset.widgetId = id;
+      button.addEventListener('click', () => loadWidget(id));
+      buttonsContainer.appendChild(button);
+    });
+
+    if (WIDGET_CONFIG.ids.length > 0) {
+      loadWidget(WIDGET_CONFIG.ids[0]);
+    }
+  </script>
+
+</body>
+</html>

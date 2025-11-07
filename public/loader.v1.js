@@ -120,7 +120,8 @@ function _buildDetailedContent(panel, banner) {
 
 /* =========================================================
  [C-2] Classic Banner Content Builder
- - Responsive styles are now handled by the main function.
+ - FIX: Caps the CTA button width at 120px.
+ - FIX: Adjusts flexbox properties to allow the title to expand.
 ========================================================= */
 function _buildClassicContent(panel, banner) {
   const content = banner.content || {};
@@ -132,16 +133,54 @@ function _buildClassicContent(panel, banner) {
   const inner = el('div', { position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '24px', padding: '16px 40px 16px 24px', width: '100%', boxSizing: 'border-box' });
   inner.classList.add('yx-banner-inner');
 
-  if (content.title) { const titleEl = el('div', { fontWeight: '600', fontSize: '20px', lineHeight: '1.3', flex: '1 1 30%' }); titleEl.classList.add('yx-title'); titleEl.textContent = content.title; inner.appendChild(titleEl); }
-  if (content.description) { const descEl = el('div', { fontSize: '15px', opacity: '0.85', lineHeight: '1.4', flex: '1 1 45%' }); descEl.classList.add('yx-description'); descEl.textContent = content.description; inner.appendChild(descEl); }
+  // UPDATED: Changed flex property to allow the title to grow.
+  if (content.title) {
+    const titleEl = el('div', { fontWeight: '600', fontSize: '20px', lineHeight: '1.3', flex: '1 1 0' }); // Will now take up available space
+    titleEl.classList.add('yx-title');
+    titleEl.textContent = content.title;
+    inner.appendChild(titleEl);
+  }
+
+  // UPDATED: Changed flex property to be less aggressive.
+  if (content.description) {
+    const descEl = el('div', { fontSize: '15px', opacity: '0.85', lineHeight: '1.4', flex: '0 1 auto', whiteSpace: 'nowrap' }); // Won't grow, can shrink
+    descEl.classList.add('yx-description');
+    descEl.textContent = content.description;
+    inner.appendChild(descEl);
+  }
+
+  // UPDATED: Added maxWidth and adjusted flex properties.
   if (ctaCfg.text && ctaCfg.url) {
-    const ctaBtn = el('a', { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: ctaCfg.bg || '#c95624', color: ctaCfg.color || '#fff', padding: '12px 18px', borderRadius: '10px', textDecoration: 'none', fontWeight: '600', whiteSpace: 'nowrap', flex: '0 0 auto' });
+    const ctaBtn = el('a', {
+      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+      background: ctaCfg.bg || '#c95624', color: ctaCfg.color || '#fff', padding: '12px 18px',
+      borderRadius: '10px', textDecoration: 'none', fontWeight: '600',
+      whiteSpace: 'nowrap', flexShrink: '0', // Ensures button does not shrink
+      maxWidth: '120px' // Caps the button width
+    });
     ctaBtn.classList.add('yx-cta-btn');
     ctaBtn.href = ctaCfg.url; ctaBtn.target = '_blank'; ctaBtn.rel = 'noopener';
-    const pinIconSvg = getIconSvgByName('pin'); if (pinIconSvg) { const iconSpan = el('span', { display: 'flex', alignItems: 'center' }); iconSpan.innerHTML = pinIconSvg; ctaBtn.appendChild(iconSpan); }
-    ctaBtn.appendChild(document.createTextNode(ctaCfg.text)); inner.appendChild(ctaBtn);
+    const pinIconSvg = getIconSvgByName('pin');
+    if (pinIconSvg) {
+      const iconSpan = el('span', { display: 'flex', alignItems: 'center' });
+      iconSpan.innerHTML = pinIconSvg;
+      ctaBtn.appendChild(iconSpan);
+    }
+    ctaBtn.appendChild(document.createTextNode(ctaCfg.text));
+    inner.appendChild(ctaBtn);
   }
   panel.appendChild(inner);
+
+  const styles = el('style');
+  styles.textContent = `
+    @media (max-width: 768px) {
+      .yx-description { display: none !important; }
+      .yx-title { font-size: 16px !important; }
+      .yx-banner-inner { padding: 12px 16px !important; gap: 16px !important; }
+      .yx-cta-btn { padding: 8px 12px !important; font-size: 14px !important; }
+    }
+  `;
+  panel.appendChild(styles);
 }
 
 /* =========================================================

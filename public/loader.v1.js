@@ -119,10 +119,9 @@ function _buildDetailedContent(panel, banner) {
 }
 
 /* =========================================================
- [C-2] Classic Banner Content Builder (REVISED LAYOUT)
- - Groups title/description to reliably push the button to the right.
- - Sets button width to 25% with a 150px max-width.
- - Adds text trimming to the button if the content overflows.
+ [C-2] Classic Banner Content Builder (DESKTOP LAYOUT RESTORED)
+ - Restores the stable 3-column flexbox layout for desktop.
+ - Title, Description, and Button now correctly share the space.
 ========================================================= */
 function _buildClassicContent(panel, banner) {
   const content = banner.content || {};
@@ -131,40 +130,44 @@ function _buildClassicContent(panel, banner) {
   panel.style.color = banner.text?.color || '#fff';
   if (banner.background?.image) { panel.style.backgroundImage = `url("${banner.background.image}")`; panel.style.backgroundSize = banner.bgFit || 'cover'; }
 
-  const inner = el('div', { position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', padding: '16px 40px 16px 24px', width: '100%', boxSizing: 'border-box' });
+  const inner = el('div', {
+    position: 'relative', display: 'flex', alignItems: 'center',
+    gap: '16px',
+    padding: '16px 40px 16px 24px',
+    width: '100%', boxSizing: 'border-box'
+  });
   inner.classList.add('yx-banner-inner');
 
-  // --- NEW: Text Group for Title and Description ---
-  const textGroup = el('div', { flex: '1 1 auto', overflow: 'hidden' }); // This group will grow and push the button
-
+  // --- Item 1: The Title ---
   if (content.title) {
-    const titleEl = el('div', { fontWeight: '600', fontSize: '20px', lineHeight: '1.3', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' });
+    const titleEl = el('div', {
+      fontWeight: '600', fontSize: '20px', lineHeight: '1.3',
+      flex: '1 1 30%' // RESTORED: Stable flex property for a multi-column layout.
+    });
     titleEl.classList.add('yx-title');
     titleEl.textContent = content.title;
-    textGroup.appendChild(titleEl);
+    inner.appendChild(titleEl);
   }
+
+  // --- Item 2: The Description ---
   if (content.description) {
-    const descEl = el('div', { fontSize: '15px', opacity: '0.85', lineHeight: '1.4', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: '2px' });
+    const descEl = el('div', {
+      fontSize: '15px', opacity: '0.85', lineHeight: '1.4',
+      flex: '1 1 45%' // RESTORED: Stable flex property for a multi-column layout.
+    });
     descEl.classList.add('yx-description');
     descEl.textContent = content.description;
-    textGroup.appendChild(descEl);
+    inner.appendChild(descEl);
   }
 
-  inner.appendChild(textGroup); // Add the whole group to the banner
-
-  // --- UPDATED: Button with new sizing and text-trimming rules ---
+  // --- Item 3: The CTA Button ---
   if (ctaCfg.text && ctaCfg.url) {
     const ctaBtn = el('a', {
       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
       background: ctaCfg.bg || '#c95624', color: ctaCfg.color || '#fff', padding: '12px 18px',
       borderRadius: '10px', textDecoration: 'none', fontWeight: '600',
-      flexShrink: '0', // Prevents the button from shrinking
-      boxSizing: 'border-box',
-      flexBasis: '25%', // Base width
-      maxWidth: '150px', // Max width
-      overflow: 'hidden', // Required for text trimming
-      textOverflow: 'ellipsis', // Adds the "..."
-      whiteSpace: 'nowrap' // Prevents text from wrapping
+      whiteSpace: 'nowrap',
+      flex: '0 0 auto' // RESTORED: Stable flex property. Button will not grow or shrink.
     });
     ctaBtn.classList.add('yx-cta-btn');
     ctaBtn.href = ctaCfg.url; ctaBtn.target = '_blank'; ctaBtn.rel = 'noopener';
@@ -179,23 +182,12 @@ function _buildClassicContent(panel, banner) {
     inner.appendChild(ctaBtn);
   }
   panel.appendChild(inner);
-
-  const styles = el('style');
-  styles.textContent = `
-    @media (max-width: 768px) {
-      .yx-description { display: none !important; }
-      .yx-title { font-size: 16px !important; }
-      .yx-banner-inner { padding: 12px 16px !important; gap: 16px !important; }
-      .yx-cta-btn { padding: 8px 12px !important; font-size: 14px !important; }
-    }
-  `;
-  panel.appendChild(styles);
 }
 
 /* =========================================================
  [C-3] Main Banner Function (JS-BASED RESPONSIVE)
- - Detects screen width with JS, not CSS media queries.
- - Injects a style tag with rules for .yx-mobile for both layouts.
+ - Injects a style tag with rules for .yx-mobile that targets
+   the new column classes from C-2.
 ========================================================= */
 function openFlowingBanner({ anchorEl, banner = {}, onClose, overlayZBase = 2147483647, placementMode = 'side' }) {
   const maxW = banner.size?.maxW ?? '800px';
@@ -210,9 +202,8 @@ function openFlowingBanner({ anchorEl, banner = {}, onClose, overlayZBase = 2147
     opacity: '0', transformOrigin: transformOrigin,
     transition: 'transform .2s cubic-bezier(.2,.8,.2,1), opacity .2s cubic-bezier(.2,.8,.2,1)'
   });
-  panel.classList.add('yx-panel'); // Add base class for targeting
+  panel.classList.add('yx-panel');
 
-  // --- NEW: JS-based responsive logic ---
   const isMobile = window.screen.width <= 768;
   if (isMobile) {
     panel.classList.add('yx-mobile');
@@ -221,10 +212,11 @@ function openFlowingBanner({ anchorEl, banner = {}, onClose, overlayZBase = 2147
   const styles = el('style');
   styles.textContent = `
     /* Classic Banner Mobile Styles */
-    .yx-panel.yx-mobile .yx-description { display: none !important; }
-    .yx-panel.yx-mobile .yx-title { font-size: 16px !important; }
-    .yx-panel.yx-mobile .yx-banner-inner { padding: 12px 40px 12px 16px !important; gap: 16px !important; }
+    .yx-panel.yx-mobile .yx-title-col { flex-basis: 70% !important; }
+    .yx-panel.yx-mobile .yx-description-col { display: none !important; }
+    .yx-panel.yx-mobile .yx-button-col { flex-basis: 30% !important; }
     .yx-panel.yx-mobile .yx-cta-btn { padding: 8px 12px !important; font-size: 14px !important; }
+    .yx-panel.yx-mobile .yx-banner-inner { padding: 12px 40px 12px 16px !important; }
     
     /* Detailed Banner Mobile Styles */
     .yx-panel.yx-mobile .yx-main-container { flex-direction: column; padding: 16px 24px !important; gap: 16px !important; }
@@ -232,7 +224,6 @@ function openFlowingBanner({ anchorEl, banner = {}, onClose, overlayZBase = 2147
     .yx-panel.yx-mobile h2 { font-size: 24px !important; }
   `;
   panel.appendChild(styles);
-  // --- END of new logic ---
 
   const closeBtn = el('button', {
     position: 'absolute', right: '8px', top: '8px', border: '0', background: 'transparent',
@@ -259,8 +250,6 @@ function openFlowingBanner({ anchorEl, banner = {}, onClose, overlayZBase = 2147
   closeBtn.addEventListener('click', close);
   return { close, panel };
 }
-  
-
 
 
 

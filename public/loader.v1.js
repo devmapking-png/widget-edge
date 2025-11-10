@@ -119,9 +119,9 @@ function _buildDetailedContent(panel, banner) {
 }
 
 /* =========================================================
- [C-2] Classic Banner Content Builder (DESKTOP LAYOUT RESTORED)
- - Restores the stable 3-column flexbox layout for desktop.
- - Title, Description, and Button now correctly share the space.
+ [C-2] Classic Banner Content Builder (DEFINITIVE LAYOUT)
+ - Implements the precise 40-40-20 desktop and 70-30 mobile column split.
+ - The close button is handled by the parent function.
 ========================================================= */
 function _buildClassicContent(panel, banner) {
   const content = banner.content || {};
@@ -130,48 +130,47 @@ function _buildClassicContent(panel, banner) {
   panel.style.color = banner.text?.color || '#fff';
   if (banner.background?.image) { panel.style.backgroundImage = `url("${banner.background.image}")`; panel.style.backgroundSize = banner.bgFit || 'cover'; }
 
+  // This is the main flex container for the three columns.
   const inner = el('div', {
     position: 'relative', display: 'flex', alignItems: 'center',
     gap: '16px',
-    padding: '16px 40px 16px 24px',
+    padding: '16px 40px 16px 24px', // 40px right padding for the close button.
     width: '100%', boxSizing: 'border-box'
   });
   inner.classList.add('yx-banner-inner');
 
-  // --- Item 1: The Title ---
+  // --- Column 1: Title ---
   if (content.title) {
-    const titleEl = el('div', {
-      fontWeight: '600', fontSize: '20px', lineHeight: '1.3',
-      flex: '1 1 30%' // RESTORED: Stable flex property for a multi-column layout.
-    });
-    titleEl.classList.add('yx-title');
+    const titleCol = el('div', { flex: '0 0 40%' });
+    titleCol.classList.add('yx-title-col');
+    const titleEl = el('div', { fontWeight: '600', fontSize: '20px', lineHeight: '1.3' });
     titleEl.textContent = content.title;
-    inner.appendChild(titleEl);
+    titleCol.appendChild(titleEl);
+    inner.appendChild(titleCol);
   }
 
-  // --- Item 2: The Description ---
+  // --- Column 2: Description ---
   if (content.description) {
-    const descEl = el('div', {
-      fontSize: '15px', opacity: '0.85', lineHeight: '1.4',
-      flex: '1 1 45%' // RESTORED: Stable flex property for a multi-column layout.
-    });
-    descEl.classList.add('yx-description');
+    const descCol = el('div', { flex: '0 0 40%' });
+    descCol.classList.add('yx-description-col');
+    const descEl = el('div', { fontSize: '15px', opacity: '0.85', lineHeight: '1.4' });
     descEl.textContent = content.description;
-    inner.appendChild(descEl);
+    descCol.appendChild(descEl);
+    inner.appendChild(descCol);
   }
 
-  // --- Item 3: The CTA Button ---
+  // --- Column 3: Button ---
+  const buttonCol = el('div', { flex: '0 0 20%', display: 'flex', justifyContent: 'flex-end' });
+  buttonCol.classList.add('yx-button-col');
   if (ctaCfg.text && ctaCfg.url) {
     const ctaBtn = el('a', {
       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
       background: ctaCfg.bg || '#c95624', color: ctaCfg.color || '#fff', padding: '12px 18px',
       borderRadius: '10px', textDecoration: 'none', fontWeight: '600',
-      whiteSpace: 'nowrap',
-      flex: '0 0 auto' // RESTORED: Stable flex property. Button will not grow or shrink.
+      whiteSpace: 'nowrap'
     });
     ctaBtn.classList.add('yx-cta-btn');
     ctaBtn.href = ctaCfg.url; ctaBtn.target = '_blank'; ctaBtn.rel = 'noopener';
-
     const pinIconSvg = getIconSvgByName('pin');
     if (pinIconSvg) {
       const iconSpan = el('span', { display: 'flex', alignItems: 'center' });
@@ -179,8 +178,9 @@ function _buildClassicContent(panel, banner) {
       ctaBtn.appendChild(iconSpan);
     }
     ctaBtn.appendChild(document.createTextNode(ctaCfg.text));
-    inner.appendChild(ctaBtn);
+    buttonCol.appendChild(ctaBtn);
   }
+  inner.appendChild(buttonCol);
   panel.appendChild(inner);
 }
 

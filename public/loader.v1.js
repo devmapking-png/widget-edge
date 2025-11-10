@@ -119,10 +119,12 @@ function _buildDetailedContent(panel, banner) {
 }
 
 /* =========================================================
- [C-2] Classic Banner Content Builder
- - Adds a className to the title text for responsive targeting.
+ [C-2] Classic Banner Content Builder (FINAL COLUMN FIX)
+ - Creates a dedicated vertical "button column" for the close
+   button and the CTA button, with a 10px gap.
+ - This column is pushed to the far right.
 ========================================================= */
-function _buildClassicContent(panel, banner) {
+function _buildClassicContent(panel, banner, closeFn) { // Now receives the close function
   const content = banner.content || {};
   const ctaCfg = banner.cta || {};
   panel.style.background = banner.background?.color || '#0f172a';
@@ -131,36 +133,52 @@ function _buildClassicContent(panel, banner) {
 
   const inner = el('div', {
     position: 'relative', display: 'flex', alignItems: 'center',
+    justifyContent: 'space-between', // Pushes the two main groups apart
     gap: '16px',
-    padding: '16px 40px 16px 24px',
+    padding: '16px 24px',
     width: '100%', boxSizing: 'border-box'
   });
   inner.classList.add('yx-banner-inner');
 
-  // --- Column 1: Title ---
+  // --- Group 1: Title and Description ---
+  const textGroup = el('div', { flex: '1 1 auto' }); // This group grows
   if (content.title) {
-    const titleCol = el('div', { flex: '0 0 40%' });
-    titleCol.classList.add('yx-title-col');
     const titleEl = el('div', { fontWeight: '600', fontSize: '20px', lineHeight: '1.3' });
-    titleEl.classList.add('yx-title-text'); // ADDED CLASS
+    titleEl.classList.add('yx-title-text');
     titleEl.textContent = content.title;
-    titleCol.appendChild(titleEl);
-    inner.appendChild(titleCol);
+    textGroup.appendChild(titleEl);
   }
-
-  // --- Column 2: Description ---
   if (content.description) {
-    const descCol = el('div', { flex: '0 0 40%' });
-    descCol.classList.add('yx-description-col');
-    const descEl = el('div', { fontSize: '15px', opacity: '0.85', lineHeight: '1.4' });
+    const descEl = el('div', { fontSize: '15px', opacity: '0.85', lineHeight: '1.4', marginTop: '4px' });
+    descEl.classList.add('yx-description-col');
     descEl.textContent = content.description;
-    descCol.appendChild(descEl);
-    inner.appendChild(descCol);
+    textGroup.appendChild(descEl);
   }
+  inner.appendChild(textGroup);
 
-  // --- Column 3: Button ---
-  const buttonCol = el('div', { flex: '0 0 20%', display: 'flex', justifyContent: 'flex-end' });
+  // --- Group 2: The new Button Column ---
+  const buttonCol = el('div', {
+    display: 'flex',
+    flexDirection: 'column', // Stacks buttons vertically
+    alignItems: 'flex-end',   // Aligns them to the right
+    gap: '10px',             // The required 10px gap
+    flexShrink: '0'
+  });
   buttonCol.classList.add('yx-button-col');
+
+  // Create close button INSIDE this column
+  const closeBtn = el('button', {
+    border: '0', background: 'transparent',
+    color: banner.closeButtonColor || 'inherit',
+    fontSize: '24px', cursor: 'pointer', lineHeight: '1',
+    padding: '0' // Remove default padding
+  });
+  closeBtn.setAttribute('aria-label', 'Close');
+  closeBtn.textContent = '×';
+  closeBtn.addEventListener('click', closeFn); // Attach the close function
+  buttonCol.appendChild(closeBtn);
+
+  // Create CTA button INSIDE this column
   if (ctaCfg.text && ctaCfg.url) {
     const ctaBtn = el('a', {
       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
@@ -184,9 +202,9 @@ function _buildClassicContent(panel, banner) {
 }
 
 /* =========================================================
- [C-3] Main Banner Function (MOBILE POLISH)
- - Injects updated responsive styles for the classic banner,
-   including title font, gap, and button styles.
+ [C-3] Main Banner Function
+ - Removes close button creation from this function.
+ - Passes the 'close' function down to the content builders.
 ========================================================= */
 function openFlowingBanner({ anchorEl, banner = {}, onClose, overlayZBase = 2147483647, placementMode = 'side' }) {
   const maxW = banner.size?.maxW ?? '800px';
@@ -208,15 +226,12 @@ function openFlowingBanner({ anchorEl, banner = {}, onClose, overlayZBase = 2147
     panel.classList.add('yx-mobile');
   }
 
-  // --- UPDATED: New responsive styles ---
   const styles = el('style');
   styles.textContent = `
     /* Classic Banner Mobile Styles */
-    .yx-panel.yx-mobile .yx-title-col { flex-basis: 70% !important; }
     .yx-panel.yx-mobile .yx-description-col { display: none !important; }
-    .yx-panel.yx-mobile .yx-button-col { flex-basis: 30% !important; }
     .yx-panel.yx-mobile .yx-title-text { font-size: 18px !important; line-height: 1.1 !important; }
-    .yx-panel.yx-mobile .yx-banner-inner { padding: 12px 40px 12px 16px !important; gap: 10px !important; }
+    .yx-panel.yx-mobile .yx-banner-inner { gap: 10px !important; }
     .yx-panel.yx-mobile .yx-cta-btn { padding: 8px 12px !important; font-size: 14px !important; min-width: 100px; justify-content: center; }
     .yx-panel.yx-mobile .yx-cta-btn span { display: none !important; }
     
@@ -227,32 +242,39 @@ function openFlowingBanner({ anchorEl, banner = {}, onClose, overlayZBase = 2147
   `;
   panel.appendChild(styles);
 
-  const closeBtn = el('button', {
-    position: 'absolute', right: '8px', top: '8px', border: '0', background: 'transparent',
-    color: banner.closeButtonColor || 'inherit',
-    fontSize: '24px', cursor: 'pointer', lineHeight: '1', zIndex: '100'
-  });
-  closeBtn.setAttribute('aria-label', 'Close');
-  closeBtn.textContent = '×';
-  panel.appendChild(closeBtn);
+  // --- Teardown logic that will be passed to the builders ---
+  function close() {
+    window.removeEventListener('scroll', place, true);
+    window.removeEventListener('resize', place);
+    panel.style.transform = 'scale(0.95)';
+    panel.style.opacity = '0';
+    panel.addEventListener('transitionend', () => {
+      panel.remove();
+      onClose && onClose();
+    }, { once: true });
+  }
 
+  // --- Routing to builders, now passing the 'close' function ---
   if (banner.layout === 'detailed') {
-    _buildDetailedContent(panel, banner);
+    _buildDetailedContent(panel, banner, close);
   } else {
-    _buildClassicContent(panel, banner);
+    _buildClassicContent(panel, banner, close);
   }
 
   document.body.appendChild(panel);
 
   function place() { const r = anchorEl.getBoundingClientRect(); const pw = panel.offsetWidth, ph = panel.offsetHeight; const off = banner.offset ?? 10; let top, left; if (placementMode === 'below') { top = r.bottom + off; const align = banner.inlineAlign || 'left'; if (align === 'right') { left = r.right - pw; } else { left = r.left; } } else { top = r.top + (r.height - ph) / 2; left = r.right - pw - off; } top = Math.max(8, Math.min(top, window.innerHeight - ph - 8)); left = Math.max(8, Math.min(left, window.innerWidth - pw - 8)); panel.style.top = Math.round(top) + 'px'; panel.style.left = Math.round(left) + 'px'; }
   place();
-  window.addEventListener('scroll', place, { passive: true, capture: true }); window.addEventListener('resize', place);
-  requestAnimationFrame(() => { panel.style.transform = 'scale(1)'; panel.style.opacity = '1'; });
-  function close() { window.removeEventListener('scroll', place, true); window.removeEventListener('resize', place); panel.style.transform = 'scale(0.95)'; panel.style.opacity = '0'; panel.addEventListener('transitionend', () => { panel.remove(); onClose && onClose(); }, { once: true }); }
-  closeBtn.addEventListener('click', close);
+  window.addEventListener('scroll', place, { passive: true, capture: true });
+  window.addEventListener('resize', place);
+
+  requestAnimationFrame(() => {
+    panel.style.transform = 'scale(1)';
+    panel.style.opacity = '1';
+  });
+
   return { close, panel };
 }
-
 
 
 

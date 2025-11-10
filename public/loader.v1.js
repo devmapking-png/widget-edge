@@ -119,9 +119,8 @@ function _buildDetailedContent(panel, banner) {
 }
 
 /* =========================================================
- [C-2] Classic Banner Content Builder (DEFINITIVE LAYOUT)
- - Implements the precise 40-40-20 desktop and 70-30 mobile column split.
- - The close button is handled by the parent function.
+ [C-2] Classic Banner Content Builder
+ - Adds a className to the title text for responsive targeting.
 ========================================================= */
 function _buildClassicContent(panel, banner) {
   const content = banner.content || {};
@@ -130,11 +129,10 @@ function _buildClassicContent(panel, banner) {
   panel.style.color = banner.text?.color || '#fff';
   if (banner.background?.image) { panel.style.backgroundImage = `url("${banner.background.image}")`; panel.style.backgroundSize = banner.bgFit || 'cover'; }
 
-  // This is the main flex container for the three columns.
   const inner = el('div', {
     position: 'relative', display: 'flex', alignItems: 'center',
     gap: '16px',
-    padding: '16px 40px 16px 24px', // 40px right padding for the close button.
+    padding: '16px 40px 16px 24px',
     width: '100%', boxSizing: 'border-box'
   });
   inner.classList.add('yx-banner-inner');
@@ -144,6 +142,7 @@ function _buildClassicContent(panel, banner) {
     const titleCol = el('div', { flex: '0 0 40%' });
     titleCol.classList.add('yx-title-col');
     const titleEl = el('div', { fontWeight: '600', fontSize: '20px', lineHeight: '1.3' });
+    titleEl.classList.add('yx-title-text'); // ADDED CLASS
     titleEl.textContent = content.title;
     titleCol.appendChild(titleEl);
     inner.appendChild(titleCol);
@@ -185,9 +184,9 @@ function _buildClassicContent(panel, banner) {
 }
 
 /* =========================================================
- [C-3] Main Banner Function (JS-BASED RESPONSIVE)
- - Injects a style tag with rules for .yx-mobile that targets
-   the new column classes from C-2.
+ [C-3] Main Banner Function (MOBILE POLISH)
+ - Injects updated responsive styles for the classic banner,
+   including title font, gap, and button styles.
 ========================================================= */
 function openFlowingBanner({ anchorEl, banner = {}, onClose, overlayZBase = 2147483647, placementMode = 'side' }) {
   const maxW = banner.size?.maxW ?? '800px';
@@ -209,14 +208,17 @@ function openFlowingBanner({ anchorEl, banner = {}, onClose, overlayZBase = 2147
     panel.classList.add('yx-mobile');
   }
 
+  // --- UPDATED: New responsive styles ---
   const styles = el('style');
   styles.textContent = `
     /* Classic Banner Mobile Styles */
     .yx-panel.yx-mobile .yx-title-col { flex-basis: 70% !important; }
     .yx-panel.yx-mobile .yx-description-col { display: none !important; }
     .yx-panel.yx-mobile .yx-button-col { flex-basis: 30% !important; }
-    .yx-panel.yx-mobile .yx-cta-btn { padding: 8px 12px !important; font-size: 14px !important; }
-    .yx-panel.yx-mobile .yx-banner-inner { padding: 12px 40px 12px 16px !important; }
+    .yx-panel.yx-mobile .yx-title-text { font-size: 18px !important; line-height: 1.1 !important; }
+    .yx-panel.yx-mobile .yx-banner-inner { padding: 12px 40px 12px 16px !important; gap: 10px !important; }
+    .yx-panel.yx-mobile .yx-cta-btn { padding: 8px 12px !important; font-size: 14px !important; min-width: 100px; justify-content: center; }
+    .yx-panel.yx-mobile .yx-cta-btn span { display: none !important; }
     
     /* Detailed Banner Mobile Styles */
     .yx-panel.yx-mobile .yx-main-container { flex-direction: column; padding: 16px 24px !important; gap: 16px !important; }

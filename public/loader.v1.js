@@ -54,17 +54,15 @@
 
 /* =========================================================
  [C-1] Detailed Banner Content Builder
- - FIX: This function is now self-contained and creates its own
-   absolute-positioned close button, fixing the bug.
+ - Reduces the top margin on the "Our Partners" title to 20px.
 ========================================================= */
-function _buildDetailedContent(panel, banner, closeFn) {
+function _buildDetailedContent(panel, banner, closeFn, isMobile) {
   const content = banner.content || {};
   const ctaCfg = banner.cta || {};
   panel.style.background = banner.background?.color || '#fff';
   panel.style.color = banner.text?.color || '#000';
   if (banner.background?.image) { panel.style.backgroundImage = `url("${banner.background.image}")`; panel.style.backgroundSize = 'cover'; panel.style.backgroundPosition = 'center'; panel.style.color = banner.text?.color || '#fff'; }
 
-  // This layout's close button is positioned absolutely within the panel.
   const closeBtn = el('button', { position: 'absolute', right: '15px', top: '16px', border: '0', background: 'transparent', color: banner.closeButtonColor || 'inherit', fontSize: '24px', cursor: 'pointer', lineHeight: '1', zIndex: '100' });
   closeBtn.setAttribute('aria-label', 'Close');
   closeBtn.textContent = '×';
@@ -80,26 +78,56 @@ function _buildDetailedContent(panel, banner, closeFn) {
   }
 
   const mainContainer = el('div', { display: 'flex', padding: '24px 32px', gap: '24px', className: 'yx-main-container' });
-  const leftCol = el('div', { flex: '0 0 30%', display: 'flex', flexDirection: 'column', className: 'yx-left-col' });
-  const rightCol = el('div', { flex: '1 1 70%', overflow: 'hidden', className: 'yx-right-col' });
-  if (banner.eventLogoUrl) { const eventLogo = el('img', { height: '40px', marginBottom: '16px', alignSelf: 'flex-start' }); eventLogo.src = banner.eventLogoUrl; leftCol.appendChild(eventLogo); }
-  if (content.title) { leftCol.appendChild(el('h2', { fontSize: '28px', fontWeight: '800', margin: '0 0 12px', lineHeight: '1.2' })); leftCol.lastChild.textContent = content.title; }
-  if (content.description) { leftCol.appendChild(el('p', { fontSize: '16px', margin: '0 0 24px', opacity: '0.8' })); leftCol.lastChild.textContent = content.description; }
-  if (ctaCfg.text && ctaCfg.url) { const cta = el('a', { display: 'inline-block', padding: '12px 20px', borderRadius: '10px', textDecoration: 'none', fontWeight: '600', background: ctaCfg.bg, color: ctaCfg.color, textAlign: 'center', marginTop: 'auto' }); cta.href = ctaCfg.url; cta.target = '_blank'; cta.rel = 'noopener'; cta.textContent = ctaCfg.text; leftCol.appendChild(cta); }
+  
+  const eventLogoEl = banner.eventLogoUrl ? el('img', { height: '40px', marginBottom: '16px', alignSelf: 'flex-start' }) : null;
+  if(eventLogoEl) eventLogoEl.src = banner.eventLogoUrl;
+  
+  const titleEl = content.title ? el('h2', { fontSize: '28px', fontWeight: '800', margin: '0 0 12px', lineHeight: '1.2' }) : null;
+  if(titleEl) titleEl.textContent = content.title;
+
+  const descriptionEl = content.description ? el('p', { fontSize: '16px', margin: '0 0 24px', opacity: '0.8' }) : null;
+  if(descriptionEl) descriptionEl.textContent = content.description;
+
+  const ctaBtn = ctaCfg.text && ctaCfg.url ? el('a', { display: 'inline-block', padding: '12px 20px', borderRadius: '10px', textDecoration: 'none', fontWeight: '600', background: ctaCfg.bg, color: ctaCfg.color, textAlign: 'center', marginTop: 'auto' }) : null;
+  if(ctaBtn) { ctaBtn.href = ctaCfg.url; ctaBtn.target = '_blank'; ctaBtn.rel = 'noopener'; ctaBtn.textContent = ctaCfg.text; }
+
   const _renderScrollableSection = (items = [], type = 'card') => {
     const container = el('div', { display: 'flex', gap: '12px', overflowX: 'auto', padding: '4px 0 16px', scrollSnapType: 'x mandatory', scrollbarWidth: 'none' });
-    items.forEach(item => {
-      if (type === 'card' && item.imageUrl) {
-        const card = el('a', { display: 'flex', flexDirection: 'column', borderRadius: '12px', overflow: 'hidden', textDecoration: 'none', color: '#000', background: '#fff', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', width: '160px', minWidth: '160px', scrollSnapAlign: 'start', flexShrink: '0' }); card.href = item.url; card.target = '_blank'; card.rel = 'noopener'; const img = el('img', { width: '100%', height: '80px', objectFit: 'cover', display: 'block' }); img.src = item.imageUrl; card.appendChild(img); const cardContent = el('div', { padding: '8px 12px', flexGrow: '1', display: 'flex', flexDirection: 'column' }); const tag = el('div', { fontSize: '12px', opacity: '0.7', marginBottom: '4px' }); tag.textContent = item.tag; cardContent.appendChild(tag); const title = el('div', { fontWeight: '600', fontSize: '14px', lineHeight: '1.4', height: '39.2px', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', webkitLineClamp: '2', webkitBoxOrient: 'vertical' }); title.textContent = item.title; cardContent.appendChild(title); card.appendChild(cardContent); container.appendChild(card);
+    items.forEach(item => { /* ... (card/partner rendering logic is unchanged) ... */
+      if (type === 'card' && item.imageUrl) { const card = el('a', { display: 'flex', flexDirection: 'column', borderRadius: '12px', overflow: 'hidden', textDecoration: 'none', color: '#000', background: '#fff', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', width: '160px', minWidth: '160px', scrollSnapAlign: 'start', flexShrink: '0' }); card.href = item.url; card.target = '_blank'; card.rel = 'noopener'; const img = el('img', { width: '100%', height: '80px', objectFit: 'cover', display: 'block' }); img.src = item.imageUrl; card.appendChild(img); const cardContent = el('div', { padding: '8px 12px', flexGrow: '1', display: 'flex', flexDirection: 'column' }); const tag = el('div', { fontSize: '12px', opacity: '0.7', marginBottom: '4px' }); tag.textContent = item.tag; cardContent.appendChild(tag); const title = el('div', { fontWeight: '600', fontSize: '14px', lineHeight: '1.4', height: '39.2px', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', webkitLineClamp: '2', webkitBoxOrient: 'vertical' }); title.textContent = item.title; cardContent.appendChild(title); card.appendChild(cardContent); container.appendChild(card);
       } else if (type === 'partner' && item.logoUrl) { const link = el('a', { display: 'inline-block', flexShrink: '0' }); link.href = item.url; link.target = '_blank'; link.rel = 'noopener'; const logo = el('img', { height: '30px', opacity: '0.8' }); logo.src = item.logoUrl; link.appendChild(logo); container.appendChild(link); }
     });
     return container;
   };
-  if (content.cards?.length) { rightCol.appendChild(el('h3', { fontSize: '16px', fontWeight: '600', margin: '0 0 12px' })); rightCol.lastChild.textContent = 'Take a look at what you can find'; rightCol.appendChild(_renderScrollableSection(content.cards, 'card')); }
-  if (content.partners?.length) { rightCol.appendChild(el('h3', { fontSize: '16px', fontWeight: '600', margin: '24px 0 12px' })); rightCol.lastChild.textContent = 'Our Partners'; rightCol.appendChild(_renderScrollableSection(content.partners, 'partner')); }
-  mainContainer.appendChild(leftCol); mainContainer.appendChild(rightCol); panel.appendChild(mainContainer);
-}
 
+  const rightColContent = document.createDocumentFragment();
+  if (content.cards?.length) { const cardsTitle = el('h3', { fontSize: '16px', fontWeight: '600', margin: '0 0 12px' }); cardsTitle.textContent = 'Take a look at what you can find'; rightColContent.appendChild(cardsTitle); rightColContent.appendChild(_renderScrollableSection(content.cards, 'card')); }
+  
+  // FIX: marginTop changed from 24px to 20px
+  if (content.partners?.length) { const partnersTitle = el('h3', { fontSize: '16px', fontWeight: '600', margin: '20px 0 12px' }); partnersTitle.textContent = 'Our Partners'; rightColContent.appendChild(partnersTitle); rightColContent.appendChild(_renderScrollableSection(content.partners, 'partner')); }
+
+  if (isMobile) {
+    const mobileCol = el('div', { display: 'flex', flexDirection: 'column', minWidth: '0' });
+    if(eventLogoEl) mobileCol.appendChild(eventLogoEl);
+    if(titleEl) mobileCol.appendChild(titleEl);
+    if(descriptionEl) mobileCol.appendChild(descriptionEl);
+    mobileCol.appendChild(rightColContent);
+    if(ctaBtn) mobileCol.appendChild(ctaBtn);
+    mainContainer.appendChild(mobileCol);
+  } else {
+    const leftCol = el('div', { flex: '0 0 30%', display: 'flex', flexDirection: 'column', className: 'yx-left-col' });
+    const rightCol = el('div', { flex: '1 1 70%', overflow: 'hidden', className: 'yx-right-col', minWidth: '0' });
+    if(eventLogoEl) leftCol.appendChild(eventLogoEl);
+    if(titleEl) leftCol.appendChild(titleEl);
+    if(descriptionEl) leftCol.appendChild(descriptionEl);
+    if(ctaBtn) leftCol.appendChild(ctaBtn);
+    rightCol.appendChild(rightColContent);
+    mainContainer.appendChild(leftCol);
+    mainContainer.appendChild(rightCol);
+  }
+
+  panel.appendChild(mainContainer);
+}
 
 
 /* =========================================================
@@ -154,8 +182,8 @@ function _buildClassicContent(panel, banner, closeFn) {
 
 /* =========================================================
  [C-3] Main Banner Function
- - NEW: Adds responsive styles to stack the 'detailed' banner's columns on mobile.
- - Passes the 'close' function down to both content builders.
+ - Adjusts mobile padding for the detailed banner to 24px top/bottom
+   and 15px left/right.
 ========================================================= */
 function openFlowingBanner({ anchorEl, banner = {}, onClose, overlayZBase = 2147483647, placementMode = 'side' }) {
   const maxW = banner.size?.maxW ?? '800px';
@@ -185,9 +213,8 @@ function openFlowingBanner({ anchorEl, banner = {}, onClose, overlayZBase = 2147
     .yx-panel.yx-mobile .yx-cta-btn { padding: 8px 12px !important; font-size: 14px !important; min-width: 100px; justify-content: center; }
     .yx-panel.yx-mobile .yx-cta-btn span { display: none !important; }
     
-    /* NEW: Detailed Banner Mobile Styles */
-    .yx-panel.yx-mobile .yx-main-container { flex-direction: column; padding: 16px 24px !important; gap: 16px !important; }
-    .yx-panel.yx-mobile .yx-left-col, .yx-panel.yx-mobile .yx-right-col { flex-basis: auto !important; }
+    /* Detailed Banner Mobile Styles */
+    .yx-panel.yx-mobile .yx-main-container { padding: 24px 15px !important; }
     .yx-panel.yx-mobile h2 { font-size: 24px !important; }
   `;
   panel.appendChild(styles);
@@ -199,9 +226,8 @@ function openFlowingBanner({ anchorEl, banner = {}, onClose, overlayZBase = 2147
     panel.addEventListener('transitionend', () => { panel.remove(); onClose && onClose(); }, { once: true });
   }
 
-  // --- Logic is now clean: pass the 'close' function to the appropriate builder ---
   if (banner.layout === 'detailed') {
-    _buildDetailedContent(panel, banner, close);
+    _buildDetailedContent(panel, banner, close, isMobile);
   } else {
     _buildClassicContent(panel, banner, close);
   }
@@ -216,7 +242,6 @@ function openFlowingBanner({ anchorEl, banner = {}, onClose, overlayZBase = 2147
   requestAnimationFrame(() => { panel.style.transform = 'scale(1)'; panel.style.opacity = '1'; });
   return { close, panel };
 }
-
 
 
 /* =========================================================

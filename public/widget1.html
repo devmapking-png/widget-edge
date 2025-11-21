@@ -1,26 +1,28 @@
-
 <!doctype html>
-
 <html>
-
-<head><meta charset="utf-8"><title>Widget Test</title></head>
-
+<head>
+  <meta charset="utf-8">
+  <title>Widget Test (LOCAL)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
 <body>
 
 <h1>Widget below:</h1>
 
+<!-- POINT TO LOCALHOST, NOT VERCEL -->
 <script
-
-defer
-
-src="https://widget-edge.vercel.app/loader.v1.js"
-
-data-api-base="https://widget-edge.vercel.app"
-
-data-widget-id="widgeta">
-
+  defer
+  src="http://localhost:3000/loader.v1.js"
+  data-api-base="https://widget-edge.vercel.app" 
+  data-widget-id="widgete">
 </script>
 
-</body>
+<!-- 
+  Note: 
+  1. src="http://localhost:3000/..." loads the SCRIPT from your computer.
+  2. data-api-base="..." tells it to get the JSON CONFIG from Vercel/Supabase.
+     (This is usually what you want: local code, live database).
+-->
 
+</body>
 </html>

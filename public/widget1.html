@@ -2,27 +2,42 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Widget Test (LOCAL)</title>
+  <title>Widget Test (Auto-Switch)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 <body>
 
 <h1>Widget below:</h1>
 
-<!-- POINT TO LOCALHOST, NOT VERCEL -->
-<script
-  defer
-  src="http://localhost:3000/loader.v1.js"
-  data-api-base="https://widget-edge.vercel.app" 
-  data-widget-id="widgete">
-</script>
+<!-- This script dynamically loads the widget based on the environment -->
+<script>
+  (function() {
+    // --- CONFIGURATION ---
+    const WIDGET_ID = "widgete"; // Change this ID to test different widgets
+    const PROD_URL = "https://widget-edge.vercel.app";
+    const LOCAL_URL = "http://localhost:3000";
 
-<!-- 
-  Note: 
-  1. src="http://localhost:3000/..." loads the SCRIPT from your computer.
-  2. data-api-base="..." tells it to get the JSON CONFIG from Vercel/Supabase.
-     (This is usually what you want: local code, live database).
--->
+    // --- DETECTION LOGIC ---
+    // Check if we are running on localhost or 127.0.0.1
+    const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+    
+    // Select the correct source for the JS file
+    const scriptSrc = isLocal ? `${LOCAL_URL}/loader.v1.js` : `${PROD_URL}/loader.v1.js`;
+
+    // --- INJECTION ---
+    const script = document.createElement('script');
+    script.defer = true;
+    script.src = scriptSrc;
+    
+    // We usually want to fetch DATA from the live server even when developing locally
+    script.dataset.apiBase = PROD_URL; 
+    script.dataset.widgetId = WIDGET_ID;
+
+    document.body.appendChild(script);
+
+    console.log(`[Auto-Detect] Loading widget from: ${scriptSrc}`);
+  })();
+</script>
 
 </body>
 </html>
